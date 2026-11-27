@@ -1,0 +1,31 @@
+name: docsapi
+
+services:
+  docsapi-ocr:
+    build: ./ocr
+    environment:
+      DOCSAPI_TOKEN: "${DOCSAPI_TOKEN:?Defina DOCSAPI_TOKEN no .env}"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=48m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    cpus: 1.0
+    mem_limit: 384m
+    memswap_limit: 384m
+    networks:
+      - docs_private
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8080/healthz', headers={'Authorization': 'Bearer ' + os.environ['DOCSAPI_TOKEN']}), timeout=3)"]
+      interval: 30s
+      timeout: 4s
+      retries: 3
+
+networks:
+  docs_private:
+    external: true
+    name: "${DOCSAPI_NETWORK:-docs_private}"
